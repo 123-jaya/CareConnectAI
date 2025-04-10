@@ -2,6 +2,7 @@
 Multi-Agent Elderly Care System using LLM Reasoning and SQLite Shared Memory
 # CareConnectAI – Multi-Agent Elderly Care System 👵🧠
 
+(This project shows just the demo of the problem solution briefed , this will be implmented upto the mark soon )
 CareConnectAI is a simulation-based multi-agent system designed to assist elderly individuals using AI-driven agents that provide health tracking, fall detection, reminders, emergency alerts, and social companionship. Each agent leverages local reasoning with shared memory using SQLite and interacts with others in a coordinated ecosystem.
 
 ---
