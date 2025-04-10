@@ -1,0 +1,180 @@
+Code :
+
+import sqlite3
+import random
+from datetime import datetime
+from IPython.display import display, Markdown
+
+# Connect to SQLite in-memory DB
+conn = sqlite3.connect(":memory:")
+cursor = conn.cursor()
+
+# Create tables
+cursor.execute("CREATE TABLE memory (key TEXT PRIMARY KEY, value TEXT)")
+cursor.execute("CREATE TABLE logs (timestamp TEXT, agent TEXT, message TEXT)")
+cursor.execute("CREATE TABLE emotions (timestamp TEXT, score INTEGER, note TEXT)")
+cursor.execute("CREATE TABLE history (round INTEGER, key TEXT, value TEXT)")
+
+# Elder profile
+profile = {
+    'name': 'Ravi',
+    'age': 73,
+    'conditions': ['hypertension', 'joint pain']
+}
+
+# Utility functions
+def write_memory(key, value, round_num=None):
+    cursor.execute("REPLACE INTO memory (key, value) VALUES (?, ?)", (key, str(value)))
+    if round_num is not None:
+        cursor.execute("INSERT INTO history VALUES (?, ?, ?)", (round_num, key, str(value)))
+    conn.commit()
+
+def read_memory(key):
+    cursor.execute("SELECT value FROM memory WHERE key=?", (key,))
+    row = cursor.fetchone()
+    return row[0] if row else None
+
+def log_event(agent, message):
+    timestamp = datetime.now().strftime("%H:%M:%S")
+    cursor.execute("INSERT INTO logs VALUES (?, ?, ?)", (timestamp, agent, message))
+    conn.commit()
+    print(f"[{agent}] {message}")
+
+def log_emotion(score, note):
+    timestamp = datetime.now().strftime("%H:%M:%S")
+    cursor.execute("INSERT INTO emotions VALUES (?, ?, ?)", (timestamp, score, note))
+    conn.commit()
+
+# Agent definitions
+def health_monitor_agent(round_num):
+    hr = random.randint(60, 140)
+    write_memory("heart_rate", hr, round_num)
+    log_event("Health Agent", f"{profile['name']}'s heart rate = {hr} bpm")
+
+def fall_detection_agent(round_num):
+    inactivity = random.randint(0, 12)
+    write_memory("inactivity", inactivity, round_num)
+    log_event("Safety Agent", f"Inactivity duration = {inactivity} min")
+
+def reminder_agent():
+    reminders = [
+        f"{profile['name']}, take your hypertension meds",
+        "Hydrate well today 💧",
+        "Time for a 2-minute stretch 🧘‍♂️"
+    ]
+    r = random.choice(reminders)
+    write_memory("reminder", r)
+    log_event("Reminder Agent", f"📲 Mobile Notification Sent: {r}")
+
+def emergency_alert_agent():
+    hr = int(read_memory("heart_rate") or 0)
+    inactivity = int(read_memory("inactivity") or 0)
+    if hr > 130 or inactivity > 10:
+        msg = "🚨 Critical! Immediate caregiver intervention advised."
+        score = -2
+    elif hr > 120 or inactivity > 8:
+        msg = "⚠️ Warning signs detected. Monitoring closely."
+        score = -1
+    else:
+        msg = "✅ Vitals normal. No alert."
+        score = 1
+    write_memory("alert_status", msg)
+    log_event("Alert Agent", msg)
+    log_emotion(score, msg)
+
+def conversation_agent():
+    chats = [
+        "Hi Ravi, I hope you're feeling well today 😊",
+        "Let's do a small breathing exercise together!",
+        "Want to listen to some relaxing music?"
+    ]
+    msg = random.choice(chats)
+    write_memory("chat", msg)
+    log_event("Chat Agent", msg)
+
+def advice_agent():
+    cursor.execute("SELECT SUM(score) FROM emotions")
+    result = cursor.fetchone()[0]
+    result = result if result is not None else 0
+    if result <= -4:
+        advice = "🔔 Recommend a caregiver visit today."
+    elif result <= -2:
+        advice = "📞 Suggest a caregiver call/check-in."
+    else:
+        advice = "👍 All good. Encourage routines."
+    log_event("Advice Agent", advice)
+
+# Run one simulation round
+def run_multi_round_simulation(round_num):
+    print(f"\n🌿 [Round {round_num}] — CareConnectAI PRO Simulation 🌿")
+    health_monitor_agent(round_num)
+    fall_detection_agent(round_num)
+    reminder_agent()
+    emergency_alert_agent()
+    conversation_agent()
+    advice_agent()
+
+# Show final logs in table format
+def show_logs():
+    cursor.execute("SELECT * FROM logs")
+    rows = cursor.fetchall()
+    if rows:
+        md_table = "| Time | Agent | Message |\n|------|--------|---------|\n"
+        for row in rows:
+            md_table += f"| {row[0]} | {row[1]} | {row[2]} |\n"
+        display(Markdown(md_table))
+
+# Run 3 simulation rounds
+for round_id in range(1, 4):
+    run_multi_round_simulation(round_id)
+
+# Show all logs
+show_logs()
+
+
+Output :
+
+🌿 [Round 1] — CareConnectAI PRO Simulation 🌿
+[Health Agent] Ravi's heart rate = 116 bpm
+[Safety Agent] Inactivity duration = 3 min
+[Reminder Agent] 📲 Mobile Notification Sent: Hydrate well today 💧
+[Alert Agent] ✅ Vitals normal. No alert.
+[Chat Agent] Want to listen to some relaxing music?
+[Advice Agent] 👍 All good. Encourage routines.
+
+🌿 [Round 2] — CareConnectAI PRO Simulation 🌿
+[Health Agent] Ravi's heart rate = 78 bpm
+[Safety Agent] Inactivity duration = 4 min
+[Reminder Agent] 📲 Mobile Notification Sent: Time for a 2-minute stretch 🧘‍♂️
+[Alert Agent] ✅ Vitals normal. No alert.
+[Chat Agent] Want to listen to some relaxing music?
+[Advice Agent] 👍 All good. Encourage routines.
+
+🌿 [Round 3] — CareConnectAI PRO Simulation 🌿
+[Health Agent] Ravi's heart rate = 85 bpm
+[Safety Agent] Inactivity duration = 5 min
+[Reminder Agent] 📲 Mobile Notification Sent: Time for a 2-minute stretch 🧘‍♂️
+[Alert Agent] ✅ Vitals normal. No alert.
+[Chat Agent] Let's do a small breathing exercise together!
+[Advice Agent] 👍 All good. Encourage routines.
+
+Time	Agent	Message
+20:44:51	Health Agent	Ravi's heart rate = 116 bpm
+20:44:51	Safety Agent	Inactivity duration = 3 min
+20:44:51	Reminder Agent	📲 Mobile Notification Sent: Hydrate well today 💧
+20:44:51	Alert Agent	✅ Vitals normal. No alert.
+20:44:51	Chat Agent	Want to listen to some relaxing music?
+20:44:51	Advice Agent	👍 All good. Encourage routines.
+20:44:51	Health Agent	Ravi's heart rate = 78 bpm
+20:44:51	Safety Agent	Inactivity duration = 4 min
+20:44:51	Reminder Agent	📲 Mobile Notification Sent: Time for a 2-minute stretch 🧘‍♂️
+20:44:51	Alert Agent	✅ Vitals normal. No alert.
+20:44:51	Chat Agent	Want to listen to some relaxing music?
+20:44:51	Advice Agent	👍 All good. Encourage routines.
+20:44:51	Health Agent	Ravi's heart rate = 85 bpm
+20:44:51	Safety Agent	Inactivity duration = 5 min
+20:44:51	Reminder Agent	📲 Mobile Notification Sent: Time for a 2-minute stretch 🧘‍♂️
+20:44:51	Alert Agent	✅ Vitals normal. No alert.
+20:44:51	Chat Agent	Let's do a small breathing exercise together!
+20:44:51	Advice Agent	👍 All good. Encourage routines.
+
